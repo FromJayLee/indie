@@ -1,0 +1,151 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+Of course. Here is the refined, lean, and implementation-focused Technical Requirements Document (TRD) based on the provided PRD. It strictly removes over-engineering and prioritizes clarity for building the MVP.
+
+---
+
+# **Technical Requirements Document (TRD): Pixel Space MVP**
+
+## 1. Technical Overview
+
+This document outlines the technical specifications for building the "Pixel Space" web application MVP. The core objective is to create a performant, full-screen, real-time 2D animation of a pixel-art universe using WebGL.
+
+-   **Core Architecture**: A static single-page application (SPA) built with Next.js, serving a primary WebGL canvas managed by PixiJS.
+-   **Key Technical Goal**: Achieve smooth 60fps animation on desktop and a stable 30fps on modern mobile devices by optimizing sprite rendering.
+-   **Configuration**: All dynamic elements, including advertisement objects, will be managed via a local JSON configuration file for the MVP. No backend database or admin panel is required.
+
+## 2. Technology Stack (MVP)
+
+This stack is the minimal set required to deliver the core experience.
+
+| Category             | Technology      | Rationale                                                                        |
+| -------------------- | --------------- | -------------------------------------------------------------------------------- |
+| Framework            | Next.js         | Provides a robust React foundation, optimized static builds, and easy deployment.  |
+| Language             | TypeScript      | Ensures type safety for managing complex animation logic and object states.      |
+| **Rendering Engine** | **PixiJS**      | **Primary technology.** A high-performance 2D WebGL renderer ideal for sprite-based games and animations. Abstracts away WebGL complexity. |
+| Styling              | TailwindCSS     | For minimal UI layout around the canvas (e.g., centering, background color).     |
+| Deployment           | Vercel          | Native, zero-configuration deployment for Next.js with global CDN for fast asset delivery. |
+
+***Note on Exclusions:*** *Complex state management libraries (Redux, Zustand), UI component libraries (shadcn/ui), and data-fetching libraries (@tanstack/react-query) are unnecessary for the MVP, as there is no complex UI or server state to manage.*
+
+## 3. System Architecture
+
+### 3.1. Simplified Architecture
+
+The MVP operates as a client-side-only application.
+
+```mermaid
+graph TD
+    subgraph Browser
+        A[User] --> B{Next.js Page}
+        B -- loads --> C[SpaceCanvas React Component]
+        C -- initializes --> D[PixiJS Application]
+        B -- reads --> E[config/advertisements.json]
+        E -- provides data to --> D
+        D -- renders sprites to --> F[HTML Canvas Element]
+    end
+```
+
+### 3.2. Data & Asset Flow
+
+1.  **Initial Load**: The user loads the Next.js page. The application bundle, including art assets (sprites) and the JSON configuration, is downloaded.
+2.  **Initialization**: The main React component mounts the PixiJS canvas.
+3.  **Configuration**: The application reads `config/advertisements.json` to get the list of sponsored objects and their logo URLs.
+4.  **Rendering Loop**: The PixiJS engine starts its main loop (`ticker`).
+5.  **Spawning Logic**: The engine periodically spawns objects (comets, generic ships, sponsored ships) at random positions off-screen, assigning them random trajectories. Sponsored objects are chosen based on the loaded configuration.
+6.  **Animation**: All objects are moved across the canvas each frame. The engine uses GPU-accelerated rendering for performance.
+
+### 3.3. File Structure
+
+A lean structure focused on the core rendering logic.
+
+```
+/
+├── public/
+│   ├── sprites/
+│   │   ├── spaceship.png
+│   │   ├── comet.png
+│   │   └── sponsored/
+│   │       └── [logo_from_config].png
+│   └── background.png
+├── src/
+│   ├── app/
+│   │   ├── page.tsx           # Main page that hosts the canvas
+│   │   └── layout.tsx         # Root layout
+│   ├── components/
+│   │   └── space/
+│   │       ├── SpaceCanvas.tsx  # React component wrapper for PixiJS
+│   │       └── engine/          # Core PixiJS logic
+│   │           ├── main.ts      # Engine setup, main loop
+│   │           ├── objects.ts   # Object classes (Comet, Ship)
+│   │           └── spawner.ts   # Logic for creating objects
+│   └── config/
+│       └── advertisements.json  # Ad configuration
+```
+
+## 4. Core Technical Requirements
+
+### 4.1. Rendering Engine
+
+-   **Canvas**: A single `<canvas>` element managed by PixiJS must fill 100% of the browser's viewport.
+-   **Renderer**: Use `PixiJS.Application` with `autoDensity` enabled for high-resolution displays.
+-   **Performance**:
+    -   Target **60 FPS** on desktop and **30 FPS** on mobile.
+    -   Utilize **Sprite Batching** (native in PixiJS) to minimize draw calls.
+    -   Implement **Object Pooling** for creating and destroying objects to reduce garbage collection overhead.
+-   **Object Limit**: A hard limit of **50** concurrent objects on screen must be enforced to maintain performance.
+
+### 4.2. Object & Animation Logic
+
+-   **Spawning**: Objects must be spawned off-screen and travel across the viewport.
+-   **Movement**: Each object will have a simple linear velocity vector. No complex physics is required.
+-   **Despawning**: Objects that move outside the viewport boundaries must be removed from the stage and returned to the object pool.
+
+### 4.3. Advertisement Integration
+
+-   The system will be driven by a static JSON file: `src/config/advertisements.json`.
+-   This file will contain an array of ad objects.
+-   The rendering engine will parse this file on startup and load the specified ad logos as textures for designated object types (e.g., "sponsored spaceship").
+
+#### `advertisements.json` Schema:
+
+```json
+[
+  {
+    "id": "sponsor-01",
+    "name": "Sponsor Name A",
+    "logoUrl": "/sprites/sponsored/logo-a.png",
+    "objectType": "spaceship_premium",
+    "spawnWeight": 50
+  },
+  {
+    "id": "sponsor-02",
+    "name": "Sponsor Name B",
+    "logoUrl": "/sprites/sponsored/logo-b.png",
+    "objectType": "satellite",
+    "spawnWeight": 30
+  }
+]
+```
+
+## 5. Out of Scope for MVP
+
+To ensure a focused 4-week delivery, the following features are explicitly excluded:
+
+-   **NO** user interaction (clicking objects, panning, zooming).
+-   **NO** audio (background music or sound effects).
+-   **NO** UI overlays (buttons, menus, popups).
+-   **NO** backend or database integration (e.g., Supabase).
+-   **NO** server-side rendering of the canvas state.
+-   **NO** admin dashboard for managing advertisements.
+
+## 6. Key Risks & Mitigation
+
+| Risk                                    | Mitigation Strategy                                                                                             |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **Performance Bottlenecks** on mobile or low-end devices. | Strictly enforce the 50-object limit. Use texture atlases (sprite sheets) to reduce texture swaps. Profile performance on target devices early and continuously. |
+| **Browser Compatibility** issues with WebGL. | Rely on PixiJS's robust cross-browser support. Confirm functionality on latest versions of Chrome, Firefox, and Safari. A non-functional state is acceptable on legacy browsers. |
+| **Asset Loading Time** impacts user experience. | Compress all PNG assets using tools like TinyPNG. Ensure the total initial asset payload is under 2MB. |

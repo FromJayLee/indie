@@ -14,6 +14,15 @@ const config = {
     },
     extend: {
       colors: {
+        // SANNABI 스타일 우주 테마 컬러 팔레트
+        navy: '#0a0f1e', // Deep Space Navy - 깊은 우주를 표현하는 어둡고 차분한 네이비
+        blue: '#00d1ff', // Electric Blue - 네온사인과 하이테크 느낌의 밝은 파란색
+        lime: '#bfff00', // Acid Lime - 사이버펑크 감성을 더하는 포인트 컬러
+        white: '#f8f8ff', // Ghost White - 기본 텍스트와 아이콘에 사용될 미색에 가까운 흰색
+        'gray-light': '#a0a0a0', // 밝은 회색
+        'gray-dark': '#333333', // 어두운 회색
+        
+        // 기존 shadcn-ui 색상 유지
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
@@ -47,6 +56,9 @@ const config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+      },
+      fontFamily: {
+        'press-start': ['Press Start 2P', 'cursive'],
       },
       borderRadius: {
         lg: 'var(--radius)',
